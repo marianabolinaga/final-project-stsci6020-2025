@@ -1,0 +1,559 @@
+# Instructions
+You're almost done with the semester! Take a second to congratulate yourself on getting here. As a reminder, this final project is simply an (imperfect) way of measuring what you have learned throughout the semester. So take a deep breath and do your best, but also remember that it doesn't determine your value as a human being.
+
+The exam is split into 4 sections: Module 1, 2 and 3 (6 questions), Modules 4 and 5 (3 questions), Module 6 (2 questions) and the final project. Most of the questions on this exam are short answers. You don't need to write out an overly long response (a sentence or so for each part of the question should be fine), but you should be specific in explaining your response. For example, if there is a question about whether the assumptions are reasonable. You shouldn't just say "from the plot we can see that the linearity assumption is (or is not) reasonable," but instead you should explain specifically why the plot leads you to believe the linearity assumption is (or is not) reasonable.
+
+The exam is open notes so you **can** use any of the material or any of the notes you have taken throughout the class. You **cannot** discuss the exam (while it is in progress) with anyone else. You also **cannot** use any generative AI tools. Submissions will be sent by e-mail to **nbb45@cornell.edu** before **May 14th 11:59pm**.    
+
+\newpage
+
+# Module 1, 2, and 3
+In the questions for Modules 1, 2, and 3, we will look at data from SNCF, France's national railway. The data has been cleaned and made easily available by [TidyTuesday](https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-02-26). In particular, we have data on train delays from each month between 2015-2018 for each train route (i.e., from city A to city B). So each observation (i.e., row in the data) corresponds to a specific route in a specific year and month. In the dataset, we will be particularly interested in the following variables
+
+For each row in the data, we have the following variables
+
+* year : year of observation (2015, 2016, 2017 or 2018)
+* month : month of observation (1, 2, ..., 12)
+* departure_station : station where the route begins (e.g., "PARIS NORD" or "MONTPELLIER")
+* arrival_station : station where the route ends (e.g., "PARIS NORD" or "MONTPELLIER")
+* journey_time_avg : average journey time in minutes for the route for that year and month
+* avg_delay_all_departing : average delay in minutes  for all departures for the route for that year and month (i.e., how many minutes the train was late to leave departure station)
+* avg_delay_all_arriving : average delay in minutes for all arrivals for the route for that year and month (i.e., how many minutes the train was late to arrive at the arrival_station)
+
+In the following questions, the model you fit or consider may change from question to question.
+
+
+```{r, fig.align='center', fig.height=3}
+## Load in data and remove some outliers
+train_data <- read.csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-02-26/small_trains.csv")
+# removing some outliers
+train_data <- train_data[-which(train_data$avg_delay_all_arriving < -30),]
+train_data <- train_data[-which(train_data$avg_delay_all_departing > 30),]
+# make month and year factors
+train_data$month <- as.factor(train_data$month)
+train_data$year <- as.factor(train_data$year)
+```
+
+
+## Question 1 (2 pts)
+Suppose we are interested in modeling the average delayed arrival; i.e., avg_delay_all_arriving is the outcome variable. Specifically, we would like to investigate the association between average delayed arrival and journey time (journey_time_avg) when controlling for the average departure delay (avg_delay_all_departing).
+
+Fit the relevant linear model below and write 1 sentence interpreting the estimated coefficient for journey_time_avg. 
+
+#### Question 1 Answer
+
+```{r}
+modelQ1 <- lm(avg_delay_all_arriving ~ journey_time_avg + avg_delay_all_departing, data=train_data)
+summary(modelQ1)
+```
+A one minute increase in average hourney time is associated with an expected increase of 0.0221 minutes in average arrival delay, holding the average departure delay constant. 
+
+
+## Question 2 (2 pts)
+Some output for a **different model** is shown below. Using the output, predict the average arrival delay for a train route which has an average journey time of 200 minutes, has an average departure delay of 3 minutes, and took place in January (i.e., month == 1). 
+```{r, echo =F}
+mod2 <- lm(avg_delay_all_arriving ~ journey_time_avg + avg_delay_all_departing + month,
+           data = train_data)
+summary(mod2)$coef
+```
+#### Question 2 Answer
+avg_delay_all_arriving = -0.8915 + 0.0222 * journey_time_avg + 0.7985 * avg_delay_all_departing
+
+journey_time_avg= 200
+avg_delay_all_departing= 3
+
+avg_delay_all_arriving = -0.8915 + 0.0222 * 200 + 0.7985 * 3
+
+```{r}
+-0.8915 + 0.0222 * 200 + 0.7985 * 3
+```
+
+The predicted average arrival delay for a train route which has an average journey time of 200 minutes, has an average departure delay of 3 minutes, and took place in January is approximately 5.94 minutes.
+
+
+
+## Question 3 (6 pts)
+Do the assumptions for linear regression seem reasonable for the model fit in Question 2? Explain why or why not? You should use the plots below to justify your answer.
+```{r, fig.align='center', fig.height=3, echo = F}
+par(mfrow = c(1,2))
+plot(mod2$fitted.values, mod2$residuals, pch = 19, cex = .1,
+     xlab = "fitted values", ylab = "residuals")
+plot(mod2$fitted.values, train_data$avg_delay_all_arriving,
+     pch = 19, cex = .1 , xlab = "fitted values", ylab = "observed values")
+abline(a = 0, b = 1, col = "red")
+```
+
+
+#### Question 3 Answer
+The assumptions for linear regression seem reasonable for the model fit in Question 2. The residuals vs fitted values plot shows that the residuals have no clear curved pattern (satisfying the linearity assumption) and have a fairly constant spread across the range of fitted values (satisfying the homoscedasticity assumption). The observed values vs fitted values plot show that the points generally follow the pattern of the reference line in red, whihc indicates that the model's predicted values align with the observed values (suggesting that the model fits the data appropriately).   
+
+
+
+## Question 4 (2 pts)
+Suppose you think the association between arrival delay and journey time (i.e., the slope of journey time) may change from year to year. Fit a linear model below which would allow for that. For this problem, you **do not** need to consider adjusting for other variables in the model.
+
+```{r}
+modelQ4 <- lm(avg_delay_all_arriving ~ journey_time_avg * year, data=train_data)
+summary(modelQ4)
+```
+
+### Question 4 Answer
+This linear model fits an interaction between journey_time_avg and year, to see how the slope of journey time varies per year. The slope in 2015 is 0.0025. It decreased in 2016 by 0.0022 (making the slope 0.0203, p=0.00149) and in 2017 by 0.0028 (making the slope 0.0198, p=3.23e-05), meaning the association between journey time and arrival delay was significantly weaker in 2016 and 2017 compared to 2015. In 2018, the slope was not significantly different from 2015. This supports the thought that the association between arrival delay and journey time (slope of journey time) may change from year to year.  
+
+
+## Question 5 (3 pts)
+Below, we fit a model which includes the covariates journey time, average departing delay and month. Suppose we want to test if the average arrival delay is associated with month after adjusting for journey time and average departure delay. For this problem, you don't need to consider interaction terms and you don't need to include other covariates. Describe how you would test this hypothesis. You don’t need to actually perform any calculations or write any code, but specify which function in R you would use and be specific about what the inputs would be.
+ 
+```{r}
+mod_year <- lm(avg_delay_all_arriving ~ journey_time_avg + avg_delay_all_departing + month,
+               data = train_data)
+summary(mod_year)
+```
+#### Question 5 answer
+To test if the average arrival delay is associated with month after adjusting for journey time and average departure delay, I would compare two models using an F-test. The reduced model includes only journey_time_avg and avg_delay_all_departing, whereas the full model would include month as a predictor. The function I would use on R would be the anova() function, where we would compare the full model and the reduced model [anova(mod_reduced, mod_year)]. This would test whether adding the month to the model significantly improves the model. A small p-value would mean that the month is significantly associated with the arrival delay.  
+
+## Question 6 (2 pt)
+Suppose we fit the model below where we have used the log of journey_time_avg. Write 1 sentence interpreting the coefficient for journey time.  
+
+```{r}
+mod_log <- lm(avg_delay_all_arriving ~ log(journey_time_avg),
+              data = train_data)
+summary(mod_log)
+```
+#### Question 6 answer
+A one-unit increase in the log of average journey time is associated with an estimated 3.30 minute increase in average arrival delay.  
+
+
+# Module 4 and 5
+
+
+## Question 7 (3 pts)
+In the model you fit in Question 1, each observation in the dataset corresponds to a specific route observed in a specific month and year. Thus each route appears in the data multiple times. Explain why this might violate an assumption for linear regression. How could you fix this? If your suggestion involves additional covariates or a different modeling assumption, be specific about what you mean (i.e., say what covariates would you include, or what model you would fit). There is more than 1 reasonable answer for this question, but just pick one.
+
+#### Question 7 answer
+In the model you fit in Question 1, each observation in the dataset corresponds to a specific route observed in a specific month and year, thus each route appears in the data multiple times. This might violate an assumption for linear regression, the independence assumption, because arrival days for the same route over time are likley to be correlated (dependent observations). To fix this, I can use a mixed effects model with a random intercept for each route, which can account for the repeated observations. This would let the model account for the repeated routes and allow each route to have their own avg delay. I could include a route_id variable that combines departure and arrival stations, and fit a mixed effects model using the lmer() function with a random effect variable like (1 | route_id) which would account for the dependency of the observations.  
+
+
+## Question 8 (3 pts)
+Using the model from Question 5, we plot the fitted values vs the residuals below. Explain why you might want to use robust standard errors. What might be the advantages and disadvantages of using the robust standard errors as opposed to the model based errors (the ones that come out of \texttt{summary})?
+
+```{r, echo = F}
+mod_log <- lm(avg_delay_all_arriving ~ log(journey_time_avg),
+              data = train_data)
+plot(mod_log$fitted.values, mod_log$residuals, pch = 19, cex = .1)
+```
+
+#### Question 8 answer
+This fitted values vs residuals plot shows an increasing spread of the residuals as the fitted values increase, which suggests heteroskedasticity (violating constant variance assumption). In this case, using robust standard errors would be better (more reliable). An advantage to using the robust standard errors instead of the model based errors is that the robust standard errors give valid p-values and confidence intervals even when heteroskedasticity is present. A disadvantage of using robust standard errors instead of the model based errors is that it may be less efficient when the model assumptions do hold (give larger standard errors). 
+
+
+
+## Question 9 (3 pts)
+Suppose you are taking a train tomorrow from Lille to Paris Nord and want to predict the delay in arrival. You want to be very sure about the prediction, so you gather data for 1000 different variables you think might be relevant (temperature, whether it is raining, GDP of France per month/year, the win/loss record of the soccer team in Lille, etc). You then regress average arrival delay onto all of those variables, and use it to predict the arrival delay for tomorrow's train. Explain why this might not give a good prediction. What might you do instead? 2-3 sentences for this answer is fine.
+
+#### Question 9 answer
+If I use 1000 variable to predict tomorrow's train delay from Lillie to Paris Nord, the model may not give a good prediction because including so many variables can lead to overfitting, where the model captures noise instead of the true pattern. This can lead to poor predictive performance on the new data. Instead, I might use model selection techniques like cross-validation or AIC/BIC to predict the arrival delay for tomorrow's train, to use a smaller subset of variables that can have better generalization. 
+
+
+
+# Module 6
+For the following questions, suppose we are analyzing data for Big Red Airlines, Cornell's latest idea for getting people to and from Ithaca. The dependent variable is whether or not a flight took off on time. In the \texttt{OnTime} variable: 1 indicates that the flight took off on time, 0 indicates that it was delayed. The covariates we have recorded include Temperature (in degrees), TimeOfDay (Evening, Midday, Morning), and Rain (FALSE, TRUE). 
+```{r}
+airlineData <- read.csv("https://raw.githubusercontent.com/ysamwang/btry6020_sp22/main/lab11/airline.csv")
+names(airlineData)
+```
+
+## Question 10 (2 pts)
+What is the appropriate type of regression for modeling the binary data? What is being predicted by the linear model we are fitting? i.e., if the model we set up is 
+$$ ? = b_0 + b_1 X_{1,i} + b_2 X_{2,i} \ldots$$ what is on the left side of the equation (you can write it out in words instead of typing out the math)?. 
+
+#### Question 10 answer
+The appropriate type of regression for modeling the binary data is logistic regression because the outcome variable "OnTime" is binary (1 indicates that the flight took off on time, 0 indicates that it was delayed). In logistic regression we are not predicting the outcome, rather we are predicting the log-odds that the flight is on time (left side of the equation). So this model would predict log(P(flight is on time) / P(flight is delayed)).     
+
+
+## Question 11 (2 pts)
+We fit the model below. How would you interpret the coefficient associated with \texttt{Temperature}?
+```{r}
+mod <- glm(OnTime ~ Temperature + TimeOfDay + Rain,
+           data = airlineData, family = "binomial")
+summary(mod)
+```
+#### Question 11 answer
+The coefficient for temperature is -0.05248. For one degree increase in temperature, the log-odds of the flight being on time decrease by 0.05248, holding TimeOfDay and Rain constant. 
+
+
+\newpage
+
+# Final Project (30 pts)
+
+## Introduction
+
+This final project is designed to demonstrate your mastery of linear regression techniques on real-world data. You will apply the theoretical concepts we've covered in class to a dataset of your choice, perform a comprehensive analysis, and present your findings in a professional format suitable for showcasing to potential employers.
+
+## Objectives
+
+By completing this project, you will:
+
+* Apply linear regression techniques to solve real-world problems
+* Demonstrate your ability to verify and address regression assumptions
+* Perform meaningful feature selection and hypothesis testing
+* Communicate the practical significance of your statistical findings
+* Create a professional portfolio piece for future employment opportunities
+
+## Project Requirements
+
+### Dataset Selection
+
+1. Choose a dataset from Kaggle
+2. Your dataset must have a continuous target variable suitable for linear regression
+3. The dataset should contain multiple potential predictor variables
+4. Choose a dataset that interests you and has meaningful real-world applications
+
+
+### Analysis Requirements
+Your analysis must include the following components:
+
+
+```{r}
+airbnb_data <- read.csv("/Users/marianabolinaga/Desktop/Stats/AB_US_2023.csv")
+```
+-> What factors affect the price of an AirBnB
+
+#### Exploratory Data Analysis
+
+* Summary statistics of variables
+* Visualization of distributions and relationships
+* Identification of missing values and outliers
+* Data cleaning and preprocessing steps
+
+
+```{r}
+#summary stats 
+summary(airbnb_data)
+str(airbnb_data)
+```
+
+```{r}
+#histogram of variables
+
+hist(airbnb_data$price, main = "Histogram of Price")
+hist(airbnb_data$minimum_nights, main = "Histogram of Min Nights")
+hist(airbnb_data$number_of_reviews, main = "Histogram of Number of Reviews")
+hist(airbnb_data$reviews_per_month, main = "Histogram of Reviews per Month")
+hist(airbnb_data$calculated_host_listings_count, main = "Histogram of Listings")
+hist(airbnb_data$availability_365, main = "Histogram of Availability 365")
+```
+
+```{r}
+#visualization of relationships 
+plot(airbnb_data$minimum_nights, airbnb_data$price,
+     main = "Price vs Min Nights",
+     xlab = "Min Nights",
+     ylab = "Price")
+
+plot(airbnb_data$number_of_reviews, airbnb_data$price,
+     main = "Price vs Number of Reviews",
+     xlab = "Number of Reviews",
+     ylab = "Price")
+
+plot(airbnb_data$reviews_per_month, airbnb_data$price,
+     main = "Price vs Reviews per month",
+     xlab = "Reviews per month",
+     ylab = "Price")
+
+plot(airbnb_data$calculated_host_listings_count, airbnb_data$price,
+     main = "Price vs Host Listings",
+     xlab = "Host Listings",
+     ylab = "Price")
+
+plot(airbnb_data$availability_365, airbnb_data$price,
+     main = "Price vs Availability 365",
+     xlab = "Availability 365",
+     ylab = "Price")
+```
+```{r}
+boxplot(price ~ room_type, data = airbnb_data,
+        main = "Price by Room Type",
+        ylab = "Price")
+
+boxplot(price ~ city, data = airbnb_data,
+        main = "Price by City",
+        ylab = "Price")
+```
+```{r}
+#identification of missing values
+
+colSums(is.na(airbnb_data))
+```
+```{r}
+#identification of outliers 
+
+#price 
+boxplot(airbnb_data$price, main="Boxplot of Price")
+Q1_price <- quantile(airbnb_data$price, 0.25, na.rm = TRUE)
+Q3_price <- quantile(airbnb_data$price, 0.75, na.rm = TRUE)
+IQR_price <- Q3_price - Q1_price
+
+#min nights
+boxplot(airbnb_data$minimum_nights, main="Boxplot of Min Nights")
+Q1_min_nights <- quantile(airbnb_data$minimum_nights, 0.25, na.rm = TRUE)
+Q3_min_nights <- quantile(airbnb_data$minimum_nights, 0.75, na.rm = TRUE)
+IQR_min_nights <- Q3_min_nights - Q1_min_nights
+
+#number of reviews 
+boxplot(airbnb_data$number_of_reviews, main="Boxplot of Number of reviews")
+Q1_reviews <- quantile(airbnb_data$number_of_reviews, 0.25, na.rm = TRUE)
+Q3_reviews <- quantile(airbnb_data$number_of_reviews, 0.75, na.rm = TRUE)
+IQR_reviews <- Q3_reviews - Q1_reviews
+
+#reviews per month
+boxplot(airbnb_data$reviews_per_month, main="Boxplot of Reviews per month")
+Q1_review_month <- quantile(airbnb_data$reviews_per_month, 0.25, na.rm = TRUE)
+Q3_review_month <- quantile(airbnb_data$reviews_per_month, 0.75, na.rm = TRUE)
+IQR_review_month <- Q3_review_month - Q1_review_month
+
+#host listings
+boxplot(airbnb_data$calculated_host_listings_count, main="Boxplot of Host Listings")
+Q1_listing <- quantile(airbnb_data$calculated_host_listings_count, 0.25, na.rm = TRUE)
+Q3_listing <- quantile(airbnb_data$calculated_host_listings_count, 0.75, na.rm = TRUE)
+IQR_listing <- Q3_listing - Q1_listing
+
+
+#availability 365
+boxplot(airbnb_data$availability_365, main="Boxplot of Availability 365")
+Q1_365 <- quantile(airbnb_data$availability_365, 0.25, na.rm = TRUE)
+Q3_365 <- quantile(airbnb_data$availability_365, 0.75, na.rm = TRUE)
+IQR_365 <- Q3_365 - Q1_365
+```
+```{r}
+#data cleaning and preprocessing steps
+airbnb_data <- airbnb_data[!is.na(airbnb_data$price), ]
+
+airbnb_data <- airbnb_data[airbnb_data$minimum_nights <= 365, ]
+
+airbnb_data$room_type <- as.factor(airbnb_data$room_type)
+airbnb_data$city <- as.factor(airbnb_data$city)
+airbnb_data$neighbourhood <- as.factor(airbnb_data$neighbourhood)
+airbnb_data$last_review <- as.factor(airbnb_data$last_review)
+
+airbnb_data <- airbnb_data[airbnb_data$price <= Q3_price + 1.5 * IQR_price, ]
+airbnb_data <- airbnb_data[airbnb_data$minimum_nights <= Q3_min_nights + 1.5 * IQR_min_nights, ]
+airbnb_data <- airbnb_data[airbnb_data$number_of_reviews <= Q3_reviews + 1.5 * IQR_reviews, ]
+airbnb_data <- airbnb_data[airbnb_data$reviews_per_month <= Q3_review_month + 1.5 * IQR_review_month, ]
+airbnb_data <- airbnb_data[airbnb_data$calculated_host_listings_count <= Q3_listing + 1.5 * IQR_listing, ]
+airbnb_data <- airbnb_data[airbnb_data$availability_365 <= Q3_365 + 1.5 * IQR_365, ]
+
+airbnb_data[is.na('reviews_per_month')] <- 0
+
+library(dplyr)
+airbnb_data <- airbnb_data %>% 
+  dplyr::select(-id, -name, -host_id, -host_name)
+```
+
+
+#### Regression Assumptions Verification
+
+* Linearity assessment
+* Normality of residuals
+* Homoscedasticity (constant variance of residuals)
+* Independence of observations
+* Multicollinearity assessment
+
+```{r}
+#linearity assessment 
+model <- lm(price ~ room_type + minimum_nights + number_of_reviews + reviews_per_month +  calculated_host_listings_count + availability_365 + city, data = airbnb_data)
+
+plot(model$fitted.values, model$residuals, 
+     xlab = "Fitted values", ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+```
+```{r}
+#normality of residuals
+
+qqnorm(residuals(model), main = "QQplot of Residuals")
+qqline(residuals(model))
+
+hist(residuals(model), breaks = 50, main = "Histogram of Residuals", xlab = "Residuals")
+```
+
+```{r}
+#homoskedasticity
+plot(model$fitted.values, model$residuals, 
+     xlab = "Fitted values", ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+```
+Independence of observations - this assumption is satisfied, as each observation in the dataset is a different AirBnB listing so they are not related to each other.
+
+
+```{r}
+#multicollinearity assessment 
+library(car)
+vif(model)
+```
+
+#### Assumption Violation Handling
+
+* Apply appropriate transformations when assumptions are violated
+* Document your approach to each violation
+* Compare models before and after corrections
+
+```{r}
+#before transformations
+par(mfrow = c(2, 2))
+plot(model)
+```
+
+```{r}
+#transformations
+airbnb_data$log_price <- log(airbnb_data$price + 1)
+airbnb_data$log_min_nights <- log(airbnb_data$minimum_nights +1)
+airbnb_data$sqrt_reviews <- sqrt(airbnb_data$number_of_reviews)
+airbnb_data$sqrt_reviews_month <- sqrt(airbnb_data$reviews_per_month)
+airbnb_data$log_listings <- log(airbnb_data$calculated_host_listings_count + 1)
+airbnb_data$sqrt_availability <- sqrt(airbnb_data$availability_365)
+```
+
+```{r}
+#refit model
+
+model_transformed <- lm(log_price ~ log_min_nights + sqrt_reviews + sqrt_reviews_month + log_listings + sqrt_availability + room_type + city, data = airbnb_data)
+
+par(mfrow = c(2, 2))
+plot(model_transformed)
+
+vif(model_transformed)
+```
+```{r}
+#comparing models after transformation
+
+AIC(model, model_transformed)
+```
+
+#### Variable Selection & Hypothesis Testing
+
+* Implement at least two different variable selection techniques
+* Perform hypothesis tests on coefficients
+* Assess model performance with metrics (R², adjusted R², RMSE, etc.)
+* Validate your model using appropriate cross-validation techniques
+
+```{r}
+#2 variable selection techniques 
+
+#backward selection
+model_full <- lm(log_price ~ log_min_nights + sqrt_reviews + sqrt_reviews_month + log_listings + sqrt_availability + room_type + city, data = airbnb_data)
+model_backward <- step(model_full, direction = "backward")
+summary(model_backward)
+```
+
+```{r}
+#forward selection
+model_null <- lm(log_price ~ 1, data = airbnb_data)
+model_full <- lm(log_price ~ log_min_nights + sqrt_reviews + sqrt_reviews_month + log_listings + sqrt_availability + room_type + city, data = airbnb_data)
+model_forward <- step(model_null, 
+                      scope = formula(model_full),
+                      direction = "forward")
+summary(model_forward)
+```
+```{r}
+#hypothesis tests
+summary(model_transformed)
+```
+
+
+```{r}
+#assess model performance - R and R-squared in summary 
+residuals <- residuals(model_transformed)
+rmse <- sqrt(mean(residuals^2))
+rmse
+```
+
+```{r}
+#cross-validation 
+set.seed(123)
+
+n <- nrow(airbnb_data)
+folds <- sample(rep(1:10, length.out = n))
+rmse_vec <- c()
+
+for (k in 1:10) {
+  train_data <- airbnb_data[folds !=k, ]
+  test_data <- airbnb_data[folds == k, ]
+  
+  model_k <- lm(log_price ~ log_min_nights + sqrt_reviews + sqrt_reviews_month + log_listings + sqrt_availability + room_type + city, data = train_data)
+  preds <- predict(model_k, newdata = test_data)
+  
+  valid_idx <- !is.na(preds) & !is.na(test_data$log_price)
+  rmse_k <- sqrt(mean((preds[valid_idx] - test_data$log_price[valid_idx])^2))
+  
+  rmse_vec[k] <- rmse_k
+}
+
+mean(rmse_vec)
+```
+
+#### Feature Impact Analysis
+
+* Quantify and interpret the impact of each feature on the target
+* Provide confidence intervals for significant coefficients
+* Explain the practical significance of your findings in the context of the dataset
+
+```{r}
+#confidence intervals 
+confint(model_transformed)
+```
+
+
+#### Deliverables
+
+GitHub Repository containing:
+
+* All code (well-documented Rmd files)
+* README.md with clear instructions on how to run your analysis
+* Data folder (or instructions for accessing the data)
+* Requirements.txt or environment.yml file
+
+
+#### Final Report (PDF) containing:
+
+* Introduction: dataset description and problem statement
+* Methodology: techniques used and justification
+* Results: findings from your analysis
+* Discussion: interpretation of results and limitations
+* Conclusion: summary and potential future work
+* References: cite all sources used
+
+
+## Evaluation Criteria
+Your project will be evaluated based on:
+
+* Correctness of statistical analysis and procedures
+* Proper handling of regression assumptions
+* Quality of variable selection and hypothesis testing
+* Clarity of interpretation and insights
+* Organization and documentation of code
+* Professional presentation of findings
+
+## Timeline and Submission
+
+* Release Date: May 5th, 2025
+* Due Date: Wednesday, May 14th, 2025 (11:59 PM EST)
+* Submission: Email your GitHub repository link and PDF report to nbb45@cornell.edu with the subject line "Final Project - [Your Name]"
+
+## Resources
+
+* Course materials and lecture notes
+* [Kaggle Datasets](https://www.kaggle.com/datasets)
+* [GitHub tutorial](https://nayelbettache.github.io/documents/STSCI_6020/Github_tutorial.pdf) and [GitHub documentation](https://docs.github.com/en/repositories) for repository setup.
+
+## Academic Integrity
+This is an individual project. While you may discuss general concepts with classmates, all submitted work must be your own. Proper citation is required for any external resources used.
+
+Good luck with your project! This is an opportunity to demonstrate your skills and create a valuable addition to your professional portfolio.
+
+
+
+# Finished
+
+
+You're done, congratulations!
+
