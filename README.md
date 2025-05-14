@@ -15,6 +15,7 @@ This project analyzes Airbnb listings using a multiple linear regression model t
 2. Open 'final.project.Rmd' in RStudio
 3. Knit the file to generate the report (HTML or PDF)
 4. You can download the dataset used [U.S. Airbnb Open Data] from Kaggle (https://www.kaggle.com/datasets/kritikseth/us-airbnb-open-data/data)
+5. ***Note, written analysis report is on separate PDF on the repository ("Final Report Stats.pdf"
 
 # Requirements 
 Install the required R packages with the following code:
