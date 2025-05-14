@@ -1,7 +1,10 @@
 # final-project-stsci6020-2025
 Final Project for Statistical Methods II
+
 Author: Mariana Bolinaga Sanz
+
 Course: BTRY 6020 Statistical Methods II
+
 Semester: Spring 2025
 
 # Project Overview
